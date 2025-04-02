@@ -1,0 +1,175 @@
+---
+title: "Full Analysis Report"
+format: 
+  html:
+    theme: cosmo
+    css: analysis_styles.css
+    toc: true
+    toc-depth: 4
+execute: 
+  warning: false
+  message: false
+---
+
+#### Basic EDA
+
+```{r}
+# Imports
+library(refugees) # UNHCR's refugees R package
+library(tidyverse)
+library(patchwork) # To combine plots
+library(grid) # For unit() function to set margin dimensions
+library(ggtext) # For Markdown/HTML formatting in text elements
+
+# Load Data
+population <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2023/2023-08-22/population.csv") %>%
+  mutate(`refugees (M)` = refugees / 1e6) # convert to millions
+
+
+# Filter regions
+selected_regions <- population %>%
+  filter(coo_iso %in% c("SYR", "AFG", "MMR", "YEM", "SDN", "COD"))
+
+# Check Data types
+glimpse(selected_regions)
+selected_regions$coo_name <- as.factor(selected_regions$coo_name) # Convert to factor
+
+conflict_regions <- selected_regions %>%
+  mutate(year = as.numeric(year)) %>% # Ensure year is numeric
+  group_by(year, coo_name) %>% # Group by year and country of origin
+  summarize(total_refugees = sum(`refugees (M)`))
+```
+
+#### Custom Theme
+
+All visualizations in this analysis follow a custom theme to maintain a consistent style across all plots.
+
+The theme is set globally via `.Rprofile`.
+
+```{r}
+# Custom Color Palette
+region_colors <- c(
+  "Syrian Arab Rep." = "tomato2",
+  "Afghanistan" = "palevioletred1",
+  "Myanmar" = "turquoise1",
+  "Sudan" = "orange",
+  "Dem. Rep. of the Congo" = "saddlebrown",
+  "Yemen" = "olivedrab2"
+)
+```
+
+#### Visualizing Refugee Trends Over Time by Country
+
+```{r}
+# Define the desired order of regions
+desired_order <- c(
+  "Syrian Arab Rep.", "Afghanistan", "Myanmar", "Sudan",
+  "Dem. Rep. of the Congo", "Yemen"
+)
+# Reorder the coo_name column
+conflict_regions$coo_name <- factor(conflict_regions$coo_name, levels = desired_order)
+
+# Generate Line Chart with Facets
+ggplot(conflict_regions, aes(
+  x = year, y = total_refugees,
+  colour = coo_name
+)) +
+  geom_line(linewidth = 0.75) +
+  scale_color_manual(
+    values = region_colors
+  ) +
+  scale_x_continuous(breaks = seq(2010, 2022, by = 4)) +
+  labs(
+    title = "<b>Refugees (Millions)</b> Over Time by Country",
+    x = NULL,
+    y = NULL,
+    color = "Country of Origin"
+  ) +
+  facet_wrap(~coo_name, scales = "free_x") + # Independent scaling of x-axis
+  theme(
+    strip.text = element_text(face = "bold"), # Make facet labels bold
+    strip.background = element_blank(),
+    panel.spacing = unit(0.85, "cm"),
+    plot.title = ggtext::element_markdown(size = 12, hjust = 0.1) # Enable Markdown for the title
+  )
+```
+
+#### Comparing Refugee Trends with Different Y-axis Scaling
+
+This comparison highlights how the choice of scaling can influence the visual interpretation
+
+```{r}
+# List of regions you want to compare
+region_names <- c("Myanmar", "Sudan", "Dem. Rep. of the Congo", "Yemen")
+
+# Loop through each region, create facet mini plot and individual plot, then combine them
+for (region in region_names) {
+  # Filter data for the region
+  region_data <- conflict_regions %>%
+    filter(coo_name == region)
+
+  # Mini plot from facet chart (fixed scaling)
+  facet_plot <- ggplot(region_data, aes(x = year, y = total_refugees, colour = coo_name)) +
+    geom_line(linewidth = 0.7) +
+    scale_color_manual(
+      values = region_colors
+    ) +
+    scale_x_continuous(breaks = seq(2010, 2022, by = 4)) +
+    scale_y_continuous(limits = c(0, max(conflict_regions$total_refugees))) +
+    labs(
+      title = paste(region, "(from Facet Chart)"),
+      x = NULL,
+      y = "Refugees (in <b>Millions</b>)"
+    ) +
+    theme(
+      plot.title = element_text(hjust = 0.5),
+      legend.position = "none",
+      plot.margin = unit(c(0.9, 0.9, 0.9, 0.9), "cm"), # Add 1 cm of padding around the plot
+      axis.title.y = ggtext::element_markdown() # Enable Markdown in y-axis title
+    )
+
+  # Independent plot (auto-scaled)
+  individual_plot <- ggplot(region_data, aes(x = year, y = total_refugees, colour = coo_name)) +
+    geom_line(linewidth = 0.7) +
+    scale_color_manual(
+      values =
+        region_colors
+    ) +
+    scale_x_continuous(breaks = seq(2010, 2022, by = 4)) +
+    labs(
+      title = paste(region, "(Individual Chart)"),
+      x = NULL,
+      y = "Refugees (<b>Thousands</b>)"
+    ) +
+    theme(
+      plot.title = element_text(hjust = 0.5),
+      legend.position = "none",
+      plot.margin = unit(c(0.9, 0.9, 0.9, 0.9), "cm"),
+      axis.title.y = ggtext::element_markdown()
+    )
+
+  # Combine the two plots side by side using the patchwork
+  combined_plot <- facet_plot + individual_plot +
+    plot_annotation(
+      title = paste("Facet vs Individual Scaling"),
+      theme = theme(plot.title = element_text(size = 14, hjust = 0.5))
+    )
+
+  # Add extra padding around the combined plot
+  combined_plot <- combined_plot & theme(plot.margin = unit(c(1.5, 1.5, 1.5, 1.5), "cm"))
+
+  # Save the combined plot
+  ggsave(
+    filename = paste0(region, "_comparison_plot.png"),
+    plot = combined_plot,
+    width = 12,
+    height = 6,
+    dpi = 300,
+    bg = "white"
+  )
+}
+```
+
+#### Combined plots (Facet vs Individual Scaling)
+
+![](Myanmar_comparison_plot.png) ![](Sudan_comparison_plot.png)  ![](Dem.%20Rep.%20of%20the%20Congo_comparison_plot.png) ![](Yemen_comparison_plot.png)

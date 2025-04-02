@@ -1,0 +1,225 @@
+---
+title: "Misleading Your Audience: A Guide – Part 1"
+execute: 
+  echo: false
+  warning: false
+  message: false
+format: 
+  closeread-html:
+    css: styles.css
+    theme: cosmo
+    cr-section:
+      layout: overlay-center  
+    cr-style:
+      cr-focus: true  
+      section-background-color: "#F0FFFF"  # Light azure
+---
+
+```{r, include=FALSE}
+library(refugees)
+library(tidyverse)
+library(patchwork)
+library(grid)
+library(ggtext)
+
+population <- readr::read_csv("https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2023/2023-08-22/population.csv") %>%
+  mutate(`refugees (M)` = refugees / 1e6)
+
+selected_regions <- population %>%
+  filter(coo_iso %in% c("SYR", "AFG", "MMR", "YEM", "SDN", "COD"))
+
+selected_regions$coo_name <- as.factor(selected_regions$coo_name)
+
+conflict_regions <- selected_regions %>%
+  mutate(year = as.numeric(year)) %>% # Ensure year is numeric
+  group_by(year, coo_name) %>% # Group by year and country of origin
+  summarize(total_refugees = sum(`refugees (M)`))
+
+```
+
+```{r, include=FALSE}
+region_colors <- c(
+  "Syrian Arab Rep." = "tomato2",
+  "Afghanistan" = "palevioletred1",
+  "Myanmar" = "turquoise1",
+  "Sudan" = "orange",
+  "Dem. Rep. of the Congo" = "saddlebrown",
+  "Yemen" = "olivedrab2"
+)
+```
+
+:::: cr-section
+One of the easiest ways to mislead an audience is by manipulating axis scaling.
+
+In this facet plot, all regions share the same Y-axis range, which means Syria (with the highest refugee count) dictates the scale. @cr-facet
+
+::: {#cr-facet}
+```{r}
+# Define the desired order of regions
+desired_order <- c(
+  "Syrian Arab Rep.", "Afghanistan", "Myanmar", "Sudan",
+  "Dem. Rep. of the Congo", "Yemen"
+)
+# Reorder the coo_name column
+conflict_regions$coo_name <- factor(conflict_regions$coo_name, levels = desired_order)
+
+
+ggplot(conflict_regions, aes(
+  x = year, y = total_refugees,
+  colour = coo_name
+)) +
+  geom_line(linewidth = 0.75) +
+  scale_color_manual(
+    values = region_colors
+  ) +
+  scale_x_continuous(breaks = seq(2010, 2022, by = 4)) +
+  labs(
+    title = "<b>Refugees (Millions)</b> Over Time by Country",
+    x = NULL,
+    y = NULL,
+    color = "Country of Origin"
+  ) +
+  facet_wrap(~coo_name, scales = "free_x") + # Independent scaling of x-axis
+  theme(
+    strip.text = element_text(face = "bold"), # Make facet labels bold
+    strip.background = element_blank(),
+    panel.spacing = unit(0.85, "cm"),
+    plot.title = ggtext::element_markdown(size = 12, hjust = 0.1) # Enable Markdown for the title
+  )
+```
+:::
+
+In first row, we see the immense scale of displacement in Syria and Afghanistan [@cr-facet]{pan-to="-15%,20%" scale-by="1.8"}
+
+But in 2nd row, regions like Sudan and Congo appear to show only minor fluctuations [@cr-facet]{pan-to="5%,-30%" scale-by="1.8"}
+
+
+But is it really the case in these countries!?
+
+Let's take these one by one by comparing their facet vs individual plots
+::::
+
+```{r, echo=F}
+# List of regions you want to compare
+region_names <- c("Myanmar", "Sudan", "Dem. Rep. of the Congo", "Yemen")
+
+# Loop through each region, create facet mini plot and individual plot, then combine them
+for (region in region_names) {
+  # Filter data for the region
+  region_data <- conflict_regions %>%
+    filter(coo_name == region)
+
+  # Mini plot from facet chart (fixed scaling)
+  facet_plot <- ggplot(region_data, aes(x = year, y = total_refugees, colour = coo_name)) +
+    geom_line(linewidth = 0.7) +
+    scale_color_manual(
+      values = region_colors
+    ) +
+    scale_x_continuous(breaks = seq(2010, 2022, by = 4)) +
+    scale_y_continuous(limits = c(0, max(conflict_regions$total_refugees))) +
+    labs(
+      title = paste(region, "(from Facet Chart)"),
+      x = NULL,
+      y = "Refugees (in <b>Millions</b>)"
+    ) +
+    theme(
+      plot.title = element_text(hjust = 0.5),
+      legend.position = "none",
+      plot.margin = unit(c(0.9, 0.9, 0.9, 0.9), "cm"),
+      axis.title.y = ggtext::element_markdown()
+    )
+
+  # Independent plot (auto-scaled)
+  individual_plot <- ggplot(region_data, aes(x = year, y = total_refugees, colour = coo_name)) +
+    geom_line(linewidth = 0.7) +
+    scale_color_manual(
+      values =
+        region_colors
+    ) +
+    scale_x_continuous(breaks = seq(2010, 2022, by = 4)) +
+    labs(
+      title = paste(region, "(Individual Chart)"),
+      x = NULL,
+      y = "Refugees (<b>Thousands</b>)"
+    ) +
+    theme(
+      plot.title = element_text(hjust = 0.5),
+      legend.position = "none",
+      plot.margin = unit(c(0.9, 0.9, 0.9, 0.9), "cm"), # Add 1 cm of padding around the plot
+      axis.title.y = ggtext::element_markdown()
+    )
+
+  # Combine the two plots side by side
+  combined_plot <- facet_plot + individual_plot +
+    plot_annotation(
+      title = paste("Facet vs Individual Scaling"),
+      theme = theme(plot.title = element_text(size = 14, hjust = 0.5))
+    )
+
+  # Add extra padding around the combined plot
+  combined_plot <- combined_plot & theme(plot.margin = unit(c(1.5, 1.5, 1.5, 1.5), "cm"))
+
+  # Save the combined plot
+  ggsave(
+    filename = paste0(region, "_comparison_plot.png"),
+    plot = combined_plot,
+    width = 12,
+    height = 6,
+    dpi = 300,
+    bg = "white"
+  )
+}
+```
+
+::::::: cr-section
+
+When we compare mini plot from faceted chart (y-axis in **millions**) against individually scaled chart where the y-axis is now in **thousands**. 
+
+You will see striking difference in visual representation of the refugee crisis in each of these regions, after the **y-axis scale** is adjusted.
+
+What happened to the Rohingyas in Myanmar in August 2017? @cr-comparison_plot1
+
+::: {#cr-comparison_plot1}
+
+![](Myanmar_comparison_plot.png)
+:::
+
+Civil wars in Sudan @cr-comparison_plot2
+
+::: {#cr-comparison_plot2}
+
+![](Sudan_comparison_plot.png) 
+:::
+
+Is your diamond ethically sourced? @cr-comparison_plot3
+
+
+::: {#cr-comparison_plot3}
+![](Dem.%20Rep.%20of%20the%20Congo_comparison_plot.png)
+:::
+
+Do you know which countries have the highest hunger levels according to the 2024 Global Hunger Index (GHI)? @cr-comparison_plot4
+
+::: {#cr-comparison_plot4}
+![](Yemen_comparison_plot.png)
+
+:::
+:::::::
+
+:::: cr-section
+
+This is just an instance where visualizations can be manipulated to fit one's story @cr-notes
+
+Deliberately not rectifying the misleading Y-axis scaling can show the worst humanitarian crisis as just a flat line on a chart, or overhype a small, insignificant change as a dramatic shift.
+
+Also, this was just an example, you can adopt this to scaremonger your audience to not get vaccinated.
+
+To ditch their carbohydrates completely.
+
+Throw away their aluminium utensils.
+
+And persuade them to discontinue their anxiety medications and so on...
+
+::: {#cr-notes}
+:::
+::::

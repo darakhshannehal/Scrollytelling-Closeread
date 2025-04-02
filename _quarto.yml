@@ -1,0 +1,22 @@
+project:
+  type: website
+
+website:
+  navbar:
+    left:
+      - href: index.qmd
+        text: "Scrollytelling"
+      - href: analysis.qmd
+        text: "Analysis"
+    right: 
+      - icon: linkedin
+        href: "https://www.linkedin.com/in/darakhshan-nehal-b38747154/"
+      - icon: github
+        href: "https://github.com/darakhshannehal"
+  page-footer:
+    left: "&copy; Copyright 2025, Darakhshan Nehal"
+    center: "Data: UNHCR's refugees R package"
+    right: "Built with [Quarto](https://quarto.org/)"
+
+ 
+
