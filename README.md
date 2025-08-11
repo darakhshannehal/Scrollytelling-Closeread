@@ -9,9 +9,12 @@ Built with **Quarto**, **Closeread** extension, and **R**, this project serves a
 #### Data: UNHCR's refugees R package
 
 ### R packages used:
-- tidyverse
-- ggplot2
-- refugees
+- **refugees**: UNHCR refugee data via the **#TidyTuesday** 
+- **tidyverse**: Data wrangling, transformation, and plotting (dplyr, ggplot2, etc.)
+- **ggplot2**:	Core plotting library for time-series and facet charts
+- **patchwork**:	Combines multiple ggplot objects into side-by-side layouts
+- **grid**:	Controls plot spacing and margins using unit()
+- **ggtext**:	Enables Markdown/HTML formatting in plot titles and axis labels
 
 ### Closeread Setup 
 #### To add Closeread to your own Quarto project:
