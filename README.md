@@ -1,6 +1,6 @@
 ## Scrollytelling Project: Misleading Your Audience: A Guide – Part 1
 
-### View [Scrollytelling Project](https://darakhshannehal.quarto.pub/scrollytelling/)
+### View [Scrollytelling Project](https://connect.posit.cloud/darakhshannehal/content/01a1b77a-10ec-c5ab-c42d-e4b2f6faed11?utm_source=rsconnect-rstudio)
 
 ![](images/featured.png)
 

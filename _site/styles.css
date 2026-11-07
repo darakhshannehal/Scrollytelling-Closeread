@@ -1,0 +1,35 @@
+/* css styles */
+/* Apply Times New Roman to the entire document */
+body {
+  font-family: "Times New Roman", Times, serif;
+}
+
+/* Ensure headings and other elements inherit the font */
+h1, h2, h3, h4, h5, h6, p, div, span, a, li {
+  font-family: "Times New Roman", Times, serif;
+}
+
+.title {
+  text-align: center !important;
+}
+
+/* Ensure title styling remains consistent */
+.title {
+  font-size: 1.3rem; 
+  font-weight: bold;
+}
+
+
+/* Navbar Styles */
+.navbar {
+  background-color: azure;
+  font-size: 18px;
+  font-weight: bold;
+  border-bottom: 1px solid lightsteelblue; 
+}
+
+.navbar a:hover {
+  color: #8B3E2F !important; /* Text color on hover */
+  transition: color 0.3s ease-in-out; /* Smooth transition effect (applied to color only) */
+}
+
