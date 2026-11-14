@@ -1,0 +1,20 @@
+# Quarto generated output
+_site/
+_freeze/
+.quarto/
+
+# Extensions (auto-installed)
+_extensions/
+
+# Posit Connect
+rsconnect/
+
+# R specific
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+# OS files
+.DS_Store
+Thumbs.db
